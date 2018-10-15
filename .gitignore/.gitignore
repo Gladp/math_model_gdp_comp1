@@ -1,0 +1,161 @@
+## Installing Libraries ##
+library(ggplot2); library(scales); library(grid); library(RColorBrewer)
+
+## Reading the data ##
+global_gdp <- read.csv(file.choose(),header = TRUE)
+
+## Constructing P_n+1/P_n and storing in df ##
+for (i in 1:(nrow(global_gdp)-1)){
+  global_gdp$GDP_Ratio_World[[i]] <- ((global_gdp$World_GDP[[i+1]])/(global_gdp$World_GDP[[i]]))
+}
+
+## Plotting scatter for P_n+1/P_n ##
+plot(global_gdp$World_GDP, global_gdp$GDP_Ratio_World,
+     main = "Scatter for World GDP and GDP Ratio Pairs",
+     xlab = "World GDP (US$)",
+     ylab = "Pn+1/Pn",
+     cex.main = "2",
+     cex.lab = "1.2",
+     col = "dark red",
+     xaxt = "n",
+     pch = 16,
+     cex = 1)
+
+axis(side = 1, at = c(0,2.0e+13,4.0e+13,6.0e+13,8.0e+13), labels = c("0","20 Trillion", "40 Trillion", "60 Trillion", "80 Trillion"))
+
+## Finding a linear regression ##
+m_world_whole <- lm(global_gdp$GDP_Ratio_World ~ global_gdp$World_GDP)
+abline(m_world_whole$coefficients[1], m_world_whole$coefficients[2],
+       lty = 2,
+       col = "red")
+
+## Calculating r and k for world whole ##
+r_world_whole = m_world_whole$coefficients[1]
+k_world_whole = (-m_world_whole$coefficients[1])/(m_world_whole$coefficients[2])
+
+## Segmenting the time series and repeating the process ##
+m_world_1 <- lm(global_gdp$GDP_Ratio_World[1:10] ~ global_gdp$World_GDP[1:10])
+m_world_2 <- lm(global_gdp$GDP_Ratio_World[11:19] ~ global_gdp$World_GDP[11:19])
+m_world_3 <- lm(global_gdp$GDP_Ratio_World[20:29] ~ global_gdp$World_GDP[20:29])
+m_world_4 <- lm(global_gdp$GDP_Ratio_World[30:38] ~ global_gdp$World_GDP[30:38])
+m_world_5 <- lm(global_gdp$GDP_Ratio_World[39:48] ~ global_gdp$World_GDP[39:48])
+m_world_6 <- lm(global_gdp$GDP_Ratio_World[49:58] ~ global_gdp$World_GDP[49:58])
+
+## Calculating r and k for segmented time series WORLD DATA ##
+## THIS IS RIDICULOUSLY LONG AND SHOULD BE CONDENSED ##
+r_world_1 <- m_world_1$coefficients[1]
+r_world_2 <- m_world_2$coefficients[1]
+r_world_3 <- m_world_3$coefficients[1]
+r_world_4 <- m_world_4$coefficients[1]
+r_world_5 <- m_world_5$coefficients[1]
+r_world_6 <- m_world_6$coefficients[1]
+
+k_world_1 = (-m_world_1$coefficients[1])/(m_world_1$coefficients[2])
+k_world_2 = (-m_world_2$coefficients[1])/(m_world_2$coefficients[2])
+k_world_3 = (-m_world_3$coefficients[1])/(m_world_3$coefficients[2])
+k_world_4 = (-m_world_4$coefficients[1])/(m_world_4$coefficients[2])
+k_world_5 = (-m_world_5$coefficients[1])/(m_world_5$coefficients[2])
+k_world_6 = (-m_world_6$coefficients[1])/(m_world_6$coefficients[2])
+
+r <- list(r_world_whole, r_world_1, r_world_2, r_world_3, r_world_4, r_world_5, r_world_6)
+k <- list(k_world_whole, k_world_1, k_world_2, k_world_3, k_world_4, k_world_5, k_world_6)
+
+## Fitting the whole time series model ##
+global_gdp$GDP_mod1[1] <- global_gdp$World_GDP[1]
+
+for (i in 2:58){
+  global_gdp$GDP_mod1[i] <- (as.numeric(r[1])*global_gdp$World_GDP[i-1])*(1-(global_gdp$World_GDP[i-1])/(as.numeric(k[1])))
+}
+
+## Plot for global GDP Data ##
+plot(global_gdp$Year, global_gdp$World_GDP, 
+     main = "World GDP Data",
+     type = "o", 
+     xlab = "Year", ylab = "World GDP (US$)", 
+     yaxt = "n",
+     cex.main = 2, cex.lab = 1.2,
+     col = "dark red",
+     pch = 17)
+
+axis(side = 1, at = c(1960:2017), labels = global_gdp$Year)
+axis(side = 2, at = c(0,2.0e+13,4.0e+13,6.0e+13,8.0e+13), labels = c("0","20 Trillion", "40 Trillion", "60 Trillion", "80 Trillion"))
+
+## Plotting the whole time series model ##
+par(new = T)
+
+plot(global_gdp$Year, global_gdp$GDP_mod1,
+     col = "aquamarine4",
+     type = "o",
+     yaxt = "n",
+     xaxt = "n",
+     ylab = "",
+     xlab = "",
+     pch = 16)
+
+legend(1962, 8.0e+13, legend = c("World Bank data", "Logistic mapping"),
+       col = c("dark red", "aquamarine4"),
+       lty = 1,
+       cex = 0.8,
+       lwd = 4)
+
+## Calculating the R^2 ##
+## IDEA ONE MIGHT BE WRONG LOL ##
+rss_world_whole <- sum((global_gdp$GDP_mod1 - global_gdp$World_GDP) ^ 2)
+tss_world_whole <- sum((global_gdp$GDP_mod1 - mean(global_gdp$GDP_mod1)) ^ 2)
+rsq_world_whole <- 1 - rss_world_whole/tss_world_whole
+
+## Fitting the segmented model ##
+global_gdp$GDP_mod2[1] <- global_gdp$World_GDP[1]
+
+for (i in 2:10){
+  global_gdp$GDP_mod2[i] <- (as.numeric(r[2])*global_gdp$World_GDP[i-1])*(1-(global_gdp$World_GDP[i-1])/(as.numeric(k[2])))
+}
+
+for (i in 11:19){
+  global_gdp$GDP_mod2[i] <- (as.numeric(r[3])*global_gdp$World_GDP[i-1])*(1-(global_gdp$World_GDP[i-1])/(as.numeric(k[3])))
+}
+
+for (i in 20:29){
+  global_gdp$GDP_mod2[i] <- (as.numeric(r[4])*global_gdp$World_GDP[i-1])*(1-(global_gdp$World_GDP[i-1])/(as.numeric(k[4])))
+}
+
+for (i in 30:38){
+  global_gdp$GDP_mod2[i] <- (as.numeric(r[5])*global_gdp$World_GDP[i-1])*(1-(global_gdp$World_GDP[i-1])/(as.numeric(k[5])))
+}
+
+for (i in 39:48){
+  global_gdp$GDP_mod2[i] <- (as.numeric(r[6])*global_gdp$World_GDP[i-1])*(1-(global_gdp$World_GDP[i-1])/(as.numeric(k[6])))
+}
+
+for (i in 49:58){
+  global_gdp$GDP_mod2[i] <- (as.numeric(r[7])*global_gdp$World_GDP[i-1])*(1-(global_gdp$World_GDP[i-1])/(as.numeric(k[7])))
+}
+
+## Plotting the segmented time series model ##
+par(new = T)
+
+plot(global_gdp$Year, global_gdp$GDP_mod2,
+     col = "orange",
+     type = "o",
+     yaxt = "n",
+     xaxt = "n",
+     ylab = "",
+     xlab = "",
+     pch = 15)
+
+legend(1962, 8.0e+13, legend = c("World Bank data", "Logistic mapping Whole", "Logistic mapping segmented"),
+       col = c("dark red", "aquamarine4", "orange"),
+       lty = 1,
+       cex = 0.8,
+       lwd = 4)
+
+grid(nx = NULL, ny = NULL, col = "lightgray", lty = "dotted")
+
+## Calculating the R^2 for segmented series##
+## IDEA ONE MIGHT BE WRONG LOL ##
+rss_world_seg <- sum((global_gdp$GDP_mod2 - global_gdp$World_GDP) ^ 2)
+tss_world_seg <- sum((global_gdp$GDP_mod2 - mean(global_gdp$GDP_mod2)) ^ 2)
+rsq_world_seg <- 1 - rss_world_seg/tss_world_seg
+
+## Creating plots of the correct size ##
+dev.new(width = 550, height = 330, unit = "px")
